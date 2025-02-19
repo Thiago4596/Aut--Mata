@@ -15,7 +15,7 @@ def run_as_admin():
 def main():
     run_as_admin()
     print("Autô-Mata")
-    print("v: 1.1")
+    print("v: 1.2")
     print("""
 1. Verificacao do disco (CHKDSK)
 2. Ferramenta de Resolucao de Problemas do Windows (DISM)
