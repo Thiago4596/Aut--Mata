@@ -5,21 +5,32 @@ import glob
 
 class LimpezaNavegadores:
 
-    def delete_files(self, path, pattern):
+    @staticmethod
+    def delete_files(path, pattern):
         """Deleta arquivos que correspondem ao padrão especificado."""
+        if not os.path.exists(path):
+            print(f"Caminho não encontrado: {path}")
+            return
+
         for file_path in glob.glob(os.path.join(path, pattern)):
             try:
                 if os.path.isfile(file_path):
                     os.remove(file_path)
+                    print(f"Arquivo deletado: {file_path}")
                 elif os.path.isdir(file_path):
                     shutil.rmtree(file_path)
+                    print(f"Pasta deletada: {file_path}")
             except Exception as e:
                 print(f"Erro ao deletar {file_path}: {e}")
 
     def clear_recycle_bin(self):
         """Limpa a lixeira."""
         try:
-            subprocess.run(["PowerShell.exe", "-NoProfile", "-Command", "Clear-RecycleBin", "-Confirm:$false"], check=True)
+            subprocess.run(
+                ["PowerShell.exe", "-NoProfile", "-Command", "Clear-RecycleBin", "-Confirm:$false"],
+                check=True,
+            )
+            print("Lixeira limpa com sucesso.")
         except subprocess.CalledProcessError as e:
             print(f"Erro ao limpar a lixeira: {e}")
 
@@ -28,48 +39,45 @@ class LimpezaNavegadores:
         temp_path = os.path.join(user_path, "AppData", "Local", "Temp")
         if os.path.exists(temp_path):
             self.delete_files(temp_path, "*")
-            # Cria arquivo vazio.txt
-            with open(os.path.join(temp_path, "vazio.txt"), "w") as f:
-                pass
             # Remove pastas vazias
             for root, dirs, files in os.walk(temp_path, topdown=False):
                 for dir_name in dirs:
+                    dir_path = os.path.join(root, dir_name)
                     try:
-                        os.rmdir(os.path.join(root, dir_name))
-                    except OSError:
-                        pass
-            # Remove arquivo vazio.txt
-            os.remove(os.path.join(temp_path, "vazio.txt"))
+                        if not os.listdir(dir_path):  # Verifica se a pasta está vazia
+                            os.rmdir(dir_path)
+                            print(f"Pasta vazia removida: {dir_path}")
+                    except OSError as e:
+                        print(f"Erro ao remover pasta {dir_path}: {e}")
 
     def delete_windows_temp_files(self):
         """Deleta arquivos temporários do Windows."""
-        windows_temp_path = os.path.join(os.environ["SystemRoot"], "Temp")
+        windows_temp_path = os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Temp")
         if os.path.exists(windows_temp_path):
             self.delete_files(windows_temp_path, "*")
-            # Cria arquivo vazio.txt
-            with open(os.path.join(windows_temp_path, "vazio.txt"), "w") as f:
-                pass
             # Remove pastas vazias
             for root, dirs, files in os.walk(windows_temp_path, topdown=False):
                 for dir_name in dirs:
+                    dir_path = os.path.join(root, dir_name)
                     try:
-                        os.rmdir(os.path.join(root, dir_name))
-                    except OSError:
-                        pass
-            # Remove arquivo vazio.txt
-            os.remove(os.path.join(windows_temp_path, "vazio.txt"))
+                        if not os.listdir(dir_path):  # Verifica se a pasta está vazia
+                            os.rmdir(dir_path)
+                            print(f"Pasta vazia removida: {dir_path}")
+                    except OSError as e:
+                        print(f"Erro ao remover pasta {dir_path}: {e}")
 
     def delete_log_files(self):
         """Deleta arquivos de log do Windows."""
+        system_root = os.environ.get("SystemRoot", "C:\\Windows")
         log_paths = [
-            os.path.join(os.environ["SystemRoot"], "Logs", "cbs"),
-            os.path.join(os.environ["SystemRoot"], "Logs", "measuredboot"),
-            os.path.join(os.environ["SystemRoot"], "Logs", "MoSetup"),
-            os.path.join(os.environ["SystemRoot"], "Panther"),
-            os.path.join(os.environ["SystemRoot"], "Performance", "WinSAT"),
-            os.path.join(os.environ["SystemRoot"], "inf"),
-            os.path.join(os.environ["SystemRoot"], "SoftwareDistribution"),
-            os.path.join(os.environ["SystemRoot"], "Microsoft.NET"),
+            os.path.join(system_root, "Logs", "cbs"),
+            os.path.join(system_root, "Logs", "measuredboot"),
+            os.path.join(system_root, "Logs", "MoSetup"),
+            os.path.join(system_root, "Panther"),
+            os.path.join(system_root, "Performance", "WinSAT"),
+            os.path.join(system_root, "inf"),
+            os.path.join(system_root, "SoftwareDistribution"),
+            os.path.join(system_root, "Microsoft.NET"),
         ]
         for path in log_paths:
             self.delete_files(path, "*.log")
@@ -129,7 +137,8 @@ class LimpezaNavegadores:
 
     def delete_vmware_logs(self):
         """Deleta logs do VMware."""
-        vmware_path = os.path.join(os.environ["ProgramData"], "VMware", "logs")
+        program_data = os.environ.get("ProgramData", "C:\\ProgramData")
+        vmware_path = os.path.join(program_data, "VMware", "logs")
         if os.path.exists(vmware_path):
             self.delete_files(vmware_path, "*.log")
 
@@ -148,26 +157,27 @@ class LimpezaNavegadores:
 
         # Obtém a lista de usuários
         users_path = os.path.join("C:", "Users")
-        for user in os.listdir(users_path):
-            user_path = os.path.join(users_path, user)
-            if os.path.isdir(user_path):
-                # Deleta arquivos temporários do usuário
-                self.delete_temp_files(user_path)
-                # Deleta logs do OneDrive
-                self.delete_onedrive_logs(user_path)
-                # Deleta crash dumps
-                self.delete_crash_dumps(user_path)
-                # Deleta cache de navegadores
-                self.delete_browser_cache(user_path, "Edge")
-                self.delete_browser_cache(user_path, "Chrome")
-                self.delete_browser_cache(user_path, "Brave")
-                self.delete_browser_cache(user_path, "Vivaldi")
-                # Deleta cache do Spotify
-                self.delete_spotify_cache(user_path)
-                # Deleta cache do Adobe
-                self.delete_adobe_cache(user_path)
-                # Deleta cache do TeamViewer
-                self.delete_teamviewer_cache(user_path)
+        if os.path.exists(users_path):
+            for user in os.listdir(users_path):
+                user_path = os.path.join(users_path, user)
+                if os.path.isdir(user_path):
+                    # Deleta arquivos temporários do usuário
+                    self.delete_temp_files(user_path)
+                    # Deleta logs do OneDrive
+                    self.delete_onedrive_logs(user_path)
+                    # Deleta crash dumps
+                    self.delete_crash_dumps(user_path)
+                    # Deleta cache de navegadores
+                    self.delete_browser_cache(user_path, "Edge")
+                    self.delete_browser_cache(user_path, "Chrome")
+                    self.delete_browser_cache(user_path, "Brave")
+                    self.delete_browser_cache(user_path, "Vivaldi")
+                    # Deleta cache do Spotify
+                    self.delete_spotify_cache(user_path)
+                    # Deleta cache do Adobe
+                    self.delete_adobe_cache(user_path)
+                    # Deleta cache do TeamViewer
+                    self.delete_teamviewer_cache(user_path)
 
         # Deleta arquivos temporários do Windows
         self.delete_windows_temp_files()
@@ -177,3 +187,9 @@ class LimpezaNavegadores:
 
         # Deleta logs do VMware
         self.delete_vmware_logs()
+
+
+# Exemplo de uso
+if __name__ == "__main__":
+    limpeza = LimpezaNavegadores()
+    limpeza.limpar_tudo()
