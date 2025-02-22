@@ -1,13 +1,9 @@
-from Ferramentas.limpeza_navegadores import LimpezaNavegadores
 import os
 import subprocess
 import ctypes
 import sys
 
 class Ferramentas:
-
-    limpeza = LimpezaNavegadores()
-
     @classmethod
     def comand_terminal(self, text, comand):
         print(text)
@@ -52,3 +48,20 @@ class Ferramentas:
 
     def limpeza_dns(self):
         self.comand_terminal("O dns foi limpo!", "ipconfig /flushdns")
+
+    def verificacao_de_memoria(self):
+        self.comand_terminal("A verificação de memória foi executada", "mdsched.exe")
+
+    def limpeza_de_disco(self):
+        self.comand_terminal("O disco será limpo!", "cleanmgr /d C:")
+
+    def services(self):
+        self.comand_terminal("O programa services.msc foi aberto!", "services.msc")
+    
+    def msconfig(self):
+        self.comand_terminal("O programa msconfig foi aberto!", "msconfig")
+
+    def trim(self):
+        self.comand_terminal("Verificação da ativação do trim SSD", "Fsutil behavior query DisableDeleteNotify")
+        if self.comand_terminal("O trim foi executado!", "Fsutil behavior set DisableDeleteNotify") == 1:
+            self.comand_terminal("O trim foi executado!", "Fsutil behavior set DisableDeleteNotify 0")
