@@ -42,9 +42,9 @@ class LimpezaArquivos:
                     print(f"Deletado: {caminho_arquivo}")
                 except Exception as e:
                     print(f"Erro ao deletar {caminho_arquivo}: {e}")
-            print(f"✔️ A pasta {nome_pasta} foi limpa!")
+            print(f"A pasta {nome_pasta} foi limpa!")
         else:
-            print(f"❌ A pasta {nome_pasta} não foi encontrada!")
+            print(f"A pasta {nome_pasta} não foi encontrada!")
 
     def limpar_recent_temp_prefetch(self):
         """

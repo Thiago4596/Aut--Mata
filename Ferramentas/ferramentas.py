@@ -1,13 +1,9 @@
-from Ferramentas.limpeza_navegadores import LimpezaNavegadores
 import os
 import subprocess
 import ctypes
 import sys
 
 class Ferramentas:
-
-    limpeza = LimpezaNavegadores()
-
     @classmethod
     def comand_terminal(self, text, comand):
         print(text)

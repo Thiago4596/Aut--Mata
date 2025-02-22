@@ -17,10 +17,8 @@ def verificar_admin():
         bool: True se o script estiver rodando como administrador, False caso contrário.
     """
     try:
-        # Tenta verificar se o script está rodando como administrador
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
-        # Se não for possível verificar, retorna False
         return False
 
 # Se não estiver rodando como administrador, reinicia como admin
@@ -46,96 +44,77 @@ class Redirecionador:
     def flush(self):
         pass  # Necessário para compatibilidade com sys.stdout
 
-# Função para executar funções do script ferramentas.py e capturar saída
-def executar_funcao(funcaopy):
-    def run():
-        process = subprocess.Popen(
-            [sys.executable, "-c", f"import Ferramentas.ferramentas; Ferramentas.ferramentas.{funcaopy}()"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-            text=True
-        )
-        for linha in process.stdout:
-            sys.stdout.write(linha)
-        for linha in process.stderr:
-            sys.stderr.write(linha)
-
-    thread = threading.Thread(target=run, daemon=True)
-    thread.start()
-
 # Criando a janela principal
 janela = Tk()
-guias = ttk.Notebook(janela)
-guias.pack(expand=True, fill='both')
-ferramentas = Ferramentas()
-limpeza = LimpezaArquivos()
-
-ferramentas_aba = ttk.Frame(guias)
-ferramentas_automatizadas = ttk.Frame(guias)
-
-guias.add(ferramentas_aba, text="Ferramentas")
-guias.add(ferramentas_automatizadas, text="Ferramentas Automaticas")
-
 janela.title("Autô-Mata V: 2.1")
 icone_path = os.path.join(os.path.dirname(__file__), "Ferramentas", "icone.ico")
-
-# Definir o ícone
 janela.iconbitmap(icone_path)
-#janela.geometry("500x600")
-janela.geometry()
+janela.geometry("500x600")
 janela.resizable(False, False)
 janela.config(bg="#95a5a6")
 
 style = ttk.Style()
 style.theme_use("clam")
 
-# Criando botões para chamar as funções do script Ferramentas.ferramentas na aba Ferramentas
+# Criando as abas
+guias = ttk.Notebook(janela)
+ferramentas_aba = ttk.Frame(guias)
+ferramentas_automatizadas = ttk.Frame(guias)
+guias.add(ferramentas_aba, text="Ferramentas")
+guias.add(ferramentas_automatizadas, text="Ferramentas Automáticas")
+guias.pack(expand=True, fill='both')
+
+# Criando instâncias das classes
+ferramentas = Ferramentas()
+limpeza = LimpezaArquivos()
+
 btn1 = ttk.Button(ferramentas_aba, text="Verificação de disco (Chkdsk)", command=lambda: ferramentas.check_disk())
 btn1.pack(pady=5, padx=10, fill='x')
 
-btn2 = ttk.Button(ferramentas_aba, text="Ferramenta de Problemas (DISM)", command=lambda: ferramentas.dism())
-btn2.pack(pady=5, padx=10, fill='x')
+# Função para executar as funções selecionadas
+def executar_selecionados():
+    for ferramenta, var in ferramentas_marcadas.items():
+        if var.get():
+            threading.Thread(target=getattr(ferramentas, ferramenta), daemon=True).start()
 
-btn3 = ttk.Button(ferramentas_aba, text="Reparo do Sistema (SFC /SCANNOW)", command=lambda: ferramentas.scannow())
-btn3.pack(pady=5, padx=10, fill='x')
+# Botões na aba "Ferramentas"
+botoes = {
+    "dism": "Ferramenta de Problemas (DISM)",
+    "scannow": "Reparo do Sistema (SFC /SCANNOW)",
+    "limpeza_navegadores": "Limpar Navegadores",
+    "windows_active": "Verificar Ativação do Windows (SLMGR)",
+    "limpeza_dns": "Limpeza de DNS (FlushDNS)",
+    "verificacao_de_memoria": "Verificação de memória",
+    "limpeza_de_disco": "Limpeza de disco",
+    "services": "Service.msc",
+    "msconfig": "Msconfig",
+    "trim": "Trim"
+}
 
-btn4 = ttk.Button(ferramentas_aba, text="Limpar Navegadores", command=lambda: ferramentas.limpeza_navegadores())
-btn4.pack(pady=5, padx=10, fill='x')
+for func, text in botoes.items():
+    btn = ttk.Button(ferramentas_aba, text=text, command=lambda f=func: threading.Thread(target=getattr(ferramentas, f), daemon=True).start())
+    btn.pack(pady=5, padx=10, fill='x')
 
-btn5 = ttk.Button(ferramentas_aba, text="Verificar Ativação do Windows (SLMGR)", command=lambda: ferramentas.windows_active())
-btn5.pack(pady=5, padx=10, fill='x')
-
-btn6 = ttk.Button(ferramentas_aba, text="Limpeza de DNS (FlushDNS)", command=lambda: ferramentas.limpeza_dns())
-btn6.pack(pady=5, padx=10, fill='x')
-
-btn7 = ttk.Button(ferramentas_aba, text="Verificação de memória", command=lambda: ferramentas.verificacao_de_memoria())
-btn7.pack(pady=5, padx=10, fill='x')
-
-btn8 = ttk.Button(ferramentas_aba, text="Limpeza de disco", command=lambda: ferramentas.limpeza_de_disco())
-btn8.pack(pady=5, padx=10, fill='x')
-
-btn9 = ttk.Button(ferramentas_aba, text="Limpar a pasta Recent, Temp e Prefetch", command=lambda: limpeza.limpar_recent_temp_prefetch())
-btn9.pack(pady=5, padx=10, fill='x')
-
-btn10 = ttk.Button(ferramentas_aba, text="Service.msc", command=lambda: ferramentas.services())
-btn10.pack(pady=5, padx=10, fill='x')
-
-btn11 = ttk.Button(ferramentas_aba, text="Msconfig", command=lambda: ferramentas.msconfig())
-btn11.pack(pady=5, padx=10, fill='x')
-
-btn11 = ttk.Button(ferramentas_aba, text="Trim", command=lambda: ferramentas.trim())
-btn11.pack(pady=5, padx=10, fill='x')
-
-# Caixa de texto para exibir a saída do terminal
+# Caixa de texto para saída do terminal
 caixa_texto = Text(ferramentas_aba, height=5, width=70)
-#caixa_texto.config(state = DISABLED)   
 caixa_texto.pack(pady=5)
-
-
-
-# Redireciona a saída do terminal para a caixa de texto
 sys.stdout = Redirecionador(caixa_texto)
 sys.stderr = sys.stdout
 
+# Checkboxes na aba "Ferramentas Automáticas"
+ferramentas_marcadas = {}
+frame_check = Frame(ferramentas_automatizadas)
+frame_check.pack(pady=10)
+
+for func, text in botoes.items():
+    var = BooleanVar()
+    chk = ttk.Checkbutton(frame_check, text=text, variable=var)
+    chk.pack(anchor='w', padx=10, pady=2)
+    ferramentas_marcadas[func] = var
+
+# Botão para executar funções marcadas
+btn_executar = ttk.Button(ferramentas_automatizadas, text="Executar Selecionados", command=executar_selecionados)
+btn_executar.pack(pady=10)
+
+# Iniciando a interface gráfica
 janela.mainloop()
