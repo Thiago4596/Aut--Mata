@@ -4,7 +4,6 @@ from Ferramentas.ferramentas import Ferramentas
 from Ferramentas.limpeza_windows import LimpezaArquivos
 import sys
 import threading
-import subprocess
 import ctypes
 import os
 
@@ -46,7 +45,7 @@ class Redirecionador:
 
 # Criando a janela principal
 janela = Tk()
-janela.title("Autô-Mata V: 2.2")
+janela.title("Autô-Mata V: 2.3")
 icone_path = os.path.join(os.path.dirname(__file__), "Ferramentas", "icone.ico")
 janela.iconbitmap(icone_path)
 janela.geometry("500x600")

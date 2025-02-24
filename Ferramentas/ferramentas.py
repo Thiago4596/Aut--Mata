@@ -8,10 +8,10 @@ class Ferramentas:
     def comand_terminal(self, text, comand):
         print(text)
         os.system(comand)
+        #subprocess.run(comand, shell=True, check=True) # Possibilidade de usar subprocess em vez do os.system
         print("\n")
-        #os.system("cls")
 
-    def check_disk(self):
+    def check_disk(self):        
         self.comand_terminal("O disco será checado!\n Reinicie o computador!", "echo s | chkdsk /f /r")
 
     def dism(self):
@@ -21,7 +21,7 @@ class Ferramentas:
         self.comand_terminal("O Scannow foi executado", "sfc /scannow")
 
     def limpeza_navegadores(self):
-        # Função para verificar se o script está sendo executado como administrador
+    # Função para verificar se o script está sendo executado como administrador
         def verificar_admin():
             try:
                 return ctypes.windll.shell32.IsUserAnAdmin()
@@ -37,10 +37,10 @@ class Ferramentas:
 
         # Caminho relativo para o arquivo .bat na pasta 'ferramentas'
         bat_file_path = os.path.join(os.path.dirname(__file__), "Limpeza_navegadores.bat")
-        print("A limpeza dos navegadores foi executada com sucesso!")
 
-        # Executa o arquivo .bat com privilégios de administrador
+        # Executa o arquivo .bat com privilégios de administrador e aguarda a conclusão
         subprocess.run(bat_file_path, shell=True)
+        print("A limpeza dos navegadores foi concluída com sucesso!")
 
 
     def windows_active(self):
