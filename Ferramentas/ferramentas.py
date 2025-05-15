@@ -7,9 +7,33 @@ class Ferramentas:
     @classmethod
     def comand_terminal(self, text, comand):
         print(text)
-        os.system(comand)
-        #subprocess.run(comand, shell=True, check=True) # Possibilidade de usar subprocess em vez do os.system
-        print("\n")
+        try:
+            # Execute o comando e capture stdout/stderr em tempo real
+            resultado = subprocess.run(
+                comand,
+                shell=True,
+                check=True,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True  # Garante compatibilidade de quebras de linha
+            )
+            
+            # Imprime a saída do comando
+            if resultado.stdout:
+                print("\nSaída do comando:")
+                print(resultado.stdout)
+            if resultado.stderr:
+                print("\nErros:")
+                print(resultado.stderr)
+                
+        except subprocess.CalledProcessError as e:
+            # Se o comando falhar, exibe o erro detalhado
+            print(f"\nErro durante a execução (Código {e.returncode}):")
+            print(e.stderr if e.stderr else "Sem detalhes de erro.")
+        except Exception as e:
+            print(f"\nErro inesperado: {str(e)}")
+        print("\n" + "-"*50 + "\n")  # Separador visual
 
     def check_disk(self):        
         self.comand_terminal("O disco será checado!\n Reinicie o computador!", "echo s | chkdsk /f /r")
@@ -18,7 +42,7 @@ class Ferramentas:
         self.comand_terminal("O Dism foi executado!", "dism /online /cleanup-image /restorehealth")
 
     def scannow(self):
-        self.comand_terminal("O Scannow foi executado", "sfc /scannow")
+        self.comand_terminal("O Scannow foi executado!", "sfc /scannow")
 
     def limpeza_navegadores(self):
     # Função para verificar se o script está sendo executado como administrador

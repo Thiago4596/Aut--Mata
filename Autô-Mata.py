@@ -45,7 +45,7 @@ class Redirecionador:
 
 # Criando a janela principal
 janela = Tk()
-janela.title("Autô-Mata V: 2.3")
+janela.title("Autô-Mata V: 2.4")
 icone_path = os.path.join(os.path.dirname(__file__), "Ferramentas", "icone.ico")
 janela.iconbitmap(icone_path)
 janela.geometry("500x600")
