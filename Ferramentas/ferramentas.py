@@ -2,50 +2,73 @@ import os
 import subprocess
 import ctypes
 import sys
+import queue
+import threading
 
 class Ferramentas:
-    @classmethod
+    def __init__(self):
+        # Inicializa a fila quando uma INSTÂNCIA é criada
+        self.output_queue = queue.Queue()
+        self.resultado = None
+
     def comand_terminal(self, text, comand):
-        print(text)
         try:
-            # Execute o comando e capture stdout/stderr em tempo real
-            resultado = subprocess.run(
+            # Adiciona texto inicial à fila
+            self.output_queue.put(f"{text}\n")
+            
+            # Execute o comando
+            self.resultado = subprocess.Popen(
                 comand,
                 shell=True,
-                check=True,
                 text=True,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True  # Garante compatibilidade de quebras de linha
+                stderr=subprocess.STDOUT,
             )
             
-            # Imprime a saída do comando
-            if resultado.stdout:
-                print("\nSaída do comando:")
-                print(resultado.stdout)
-            if resultado.stderr:
-                print("\nErros:")
-                print(resultado.stderr)
+            # Lê a saída em tempo real
+            for line in self.resultado.stdout:
+                self.output_queue.put(line)
                 
+            # Aguarda término do processo
+            self.resultado.wait()
+            
+            # Adiciona separador visual após conclusão
+            self.output_queue.put("\n" + "-"*50 + "\n")
+            
         except subprocess.CalledProcessError as e:
-            # Se o comando falhar, exibe o erro detalhado
-            print(f"\nErro durante a execução (Código {e.returncode}):")
-            print(e.stderr if e.stderr else "Sem detalhes de erro.")
+            error_msg = f"\nErro durante a execução (Código {e.returncode}):\n"
+            error_msg += e.stderr if e.stderr else "Sem detalhes de erro.\n"
+            self.output_queue.put(error_msg)
+            self.output_queue.put("\n" + "-"*50 + "\n")
+            
         except Exception as e:
-            print(f"\nErro inesperado: {str(e)}")
-        print("\n" + "-"*50 + "\n")  # Separador visual
+            error_msg = f"\nErro inesperado: {str(e)}\n"
+            self.output_queue.put(error_msg)
+            self.output_queue.put("\n" + "-"*50 + "\n")
 
     def check_disk(self):        
-        self.comand_terminal("O disco será checado!\n Reinicie o computador!", "echo s | chkdsk /f /r")
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("O disco será checado!\n Reinicie o computador!", "echo s | chkdsk /f /r"),
+            daemon=True
+        ).start()
 
     def dism(self):
-        self.comand_terminal("O Dism foi executado!", "dism /online /cleanup-image /restorehealth")
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("O Dism foi executado!", "dism /online /cleanup-image /restorehealth"),
+            daemon=True
+        ).start()
 
     def scannow(self):
-        self.comand_terminal("O Scannow foi executado!", "sfc /scannow")
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("O Scannow foi executado!", "sfc /scannow"),
+            daemon=True
+        ).start()
 
     def limpeza_navegadores(self):
-    # Função para verificar se o script está sendo executado como administrador
+        # Função para verificar se o script está sendo executado como administrador
         def verificar_admin():
             try:
                 return ctypes.windll.shell32.IsUserAnAdmin()
@@ -66,26 +89,59 @@ class Ferramentas:
         subprocess.run(bat_file_path, shell=True)
         print("A limpeza dos navegadores foi concluída com sucesso!")
 
-
     def windows_active(self):
-        self.comand_terminal("A verificação da ativação do windows foi executada", "slmgr /xpr")
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("A verificação da ativação do windows foi executada", "slmgr /xpr"),
+            daemon=True
+        ).start()
 
     def limpeza_dns(self):
-        self.comand_terminal("O dns foi limpo!", "ipconfig /flushdns")
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("O dns foi limpo!", "ipconfig /flushdns"),
+            daemon=True
+        ).start()
 
     def verificacao_de_memoria(self):
-        self.comand_terminal("A verificação de memória foi executada", "mdsched.exe")
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("A verificação de memória foi executada", "mdsched.exe"),
+            daemon=True
+        ).start()
 
     def limpeza_de_disco(self):
-        self.comand_terminal("O disco será limpo!", "cleanmgr /d C:")
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("O disco será limpo!", "cleanmgr /d C:"),
+            daemon=True
+        ).start()
 
     def services(self):
-        self.comand_terminal("O programa services.msc foi aberto!", "services.msc")
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("O programa services.msc foi aberto!", "services.msc"),
+            daemon=True
+        ).start()
     
     def msconfig(self):
-        self.comand_terminal("O programa msconfig foi aberto!", "msconfig")
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("O programa msconfig foi aberto!", "msconfig"),
+            daemon=True
+        ).start()
 
     def trim(self):
-        self.comand_terminal("Verificação da ativação do trim SSD", "Fsutil behavior query DisableDeleteNotify")
-        if self.comand_terminal("O trim foi executado!", "Fsutil behavior set DisableDeleteNotify") == 1:
-            self.comand_terminal("O trim foi executado!", "Fsutil behavior set DisableDeleteNotify 0")
+        # Executa o primeiro comando
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("Verificação da ativação do trim SSD", "Fsutil behavior query DisableDeleteNotify"),
+            daemon=True
+        ).start()
+        
+        # Executa o segundo comando (sem verificação de retorno)
+        threading.Thread(
+            target=self.comand_terminal,
+            args=("Configuração do trim SSD", "Fsutil behavior set DisableDeleteNotify 0"),
+            daemon=True
+        ).start()

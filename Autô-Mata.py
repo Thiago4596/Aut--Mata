@@ -6,15 +6,10 @@ import sys
 import threading
 import ctypes
 import os
+import queue  # Adicione esta importação
 
 # Função para verificar se o script está rodando como administrador
 def verificar_admin():
-    """
-    Verifica se o script está rodando como administrador.
-
-    Retorna:
-        bool: True se o script estiver rodando como administrador, False caso contrário.
-    """
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
@@ -27,10 +22,6 @@ if not verificar_admin():
     ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {parametros}', None, 1)
     sys.exit()
 
-# Fecha o terminal ao iniciar o programa (apenas no Windows)
-if os.name == "nt":
-    os.system("taskkill /F /IM cmd.exe")
-
 # Classe para redirecionar a saída do terminal para a caixa de texto
 class Redirecionador:
     def __init__(self, text_widget):
@@ -41,7 +32,7 @@ class Redirecionador:
         self.text_widget.see(END)
 
     def flush(self):
-        pass  # Necessário para compatibilidade com sys.stdout
+        pass
 
 # Criando a janela principal
 janela = Tk()
@@ -65,9 +56,22 @@ guias.pack(expand=True, fill='both')
 
 # Criando instâncias das classes
 ferramentas = Ferramentas()
-limpeza = LimpezaArquivos()
+limpeza = LimpezaArquivos()  # Se não estiver usando, pode remover
 
-btn1 = ttk.Button(ferramentas_aba, text="Verificação de disco (Chkdsk)", command=lambda: ferramentas.check_disk())
+# Função para atualizar a caixa de texto com conteúdo da fila
+def atualizar_caixa_texto():
+    try:
+        while True:
+            texto = ferramentas.output_queue.get_nowait()
+            caixa_texto.insert(END, texto)
+            caixa_texto.see(END)
+    except queue.Empty:
+        pass
+    janela.after(100, atualizar_caixa_texto)  # Verifica a cada 100ms
+
+# Botões na aba "Ferramentas"
+btn1 = ttk.Button(ferramentas_aba, text="Verificação de disco (Chkdsk)", 
+                 command=lambda: threading.Thread(target=ferramentas.check_disk, daemon=True).start())
 btn1.pack(pady=5, padx=10, fill='x')
 
 # Função para executar as funções selecionadas
@@ -91,7 +95,9 @@ botoes = {
 }
 
 for func, text in botoes.items():
-    btn = ttk.Button(ferramentas_aba, text=text, command=lambda f=func: threading.Thread(target=getattr(ferramentas, f), daemon=True).start())
+    btn = ttk.Button(ferramentas_aba, text=text, 
+                    command=lambda f=func: threading.Thread(
+                        target=getattr(ferramentas, f), daemon=True).start())
     btn.pack(pady=5, padx=10, fill='x')
 
 # Caixa de texto para saída do terminal
@@ -99,6 +105,9 @@ caixa_texto = Text(ferramentas_aba, height=5, width=70)
 caixa_texto.pack(pady=5)
 sys.stdout = Redirecionador(caixa_texto)
 sys.stderr = sys.stdout
+
+# Inicia a verificação periódica da fila
+atualizar_caixa_texto()
 
 # Checkboxes na aba "Ferramentas Automáticas"
 ferramentas_marcadas = {}
