@@ -4,6 +4,7 @@ import ctypes
 import sys
 import queue
 import threading
+from Ferramentas.limpeza_windows import LimpezaArquivos
 
 class Ferramentas:
     def __init__(self):
@@ -11,12 +12,12 @@ class Ferramentas:
         self.output_queue = queue.Queue()
         self.resultado = None
 
+    # =======================
+    # MÉTODO GENÉRICO DE COMANDO
+    # =======================
     def comand_terminal(self, text, comand):
         try:
-            # Adiciona texto inicial à fila
             self.output_queue.put(f"{text}\n")
-            
-            # Execute o comando
             self.resultado = subprocess.Popen(
                 comand,
                 shell=True,
@@ -24,29 +25,24 @@ class Ferramentas:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
-            
-            # Lê a saída em tempo real
             for line in self.resultado.stdout:
                 self.output_queue.put(line)
-                
-            # Aguarda término do processo
             self.resultado.wait()
-            
-            # Adiciona separador visual após conclusão
             self.output_queue.put("\n" + "-"*50 + "\n")
-            
         except subprocess.CalledProcessError as e:
             error_msg = f"\nErro durante a execução (Código {e.returncode}):\n"
             error_msg += e.stderr if e.stderr else "Sem detalhes de erro.\n"
             self.output_queue.put(error_msg)
             self.output_queue.put("\n" + "-"*50 + "\n")
-            
         except Exception as e:
             error_msg = f"\nErro inesperado: {str(e)}\n"
             self.output_queue.put(error_msg)
             self.output_queue.put("\n" + "-"*50 + "\n")
 
-    def check_disk(self):        
+    # =======================
+    # FERRAMENTAS DE SISTEMA
+    # =======================
+    def check_disk(self):
         threading.Thread(
             target=self.comand_terminal,
             args=("O disco será checado!\n Reinicie o computador!", "echo s | chkdsk /f /r"),
@@ -66,28 +62,6 @@ class Ferramentas:
             args=("O Scannow foi executado!", "sfc /scannow"),
             daemon=True
         ).start()
-
-    def limpeza_navegadores(self):
-        # Função para verificar se o script está sendo executado como administrador
-        def verificar_admin():
-            try:
-                return ctypes.windll.shell32.IsUserAnAdmin()
-            except:
-                return False
-
-        # Se não for administrador, pedir permissão para executar como administrador
-        if not verificar_admin():
-            script = sys.argv[0]
-            parametros = " ".join(f'"{arg}"' for arg in sys.argv[1:])
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {parametros}', None, 1)
-            sys.exit()
-
-        # Caminho relativo para o arquivo .bat na pasta 'ferramentas'
-        bat_file_path = os.path.join(os.path.dirname(__file__), "Limpeza_navegadores.bat")
-
-        # Executa o arquivo .bat com privilégios de administrador e aguarda a conclusão
-        subprocess.run(bat_file_path, shell=True)
-        print("A limpeza dos navegadores foi concluída com sucesso!")
 
     def windows_active(self):
         threading.Thread(
@@ -123,7 +97,7 @@ class Ferramentas:
             args=("O programa services.msc foi aberto!", "services.msc"),
             daemon=True
         ).start()
-    
+
     def msconfig(self):
         threading.Thread(
             target=self.comand_terminal,
@@ -132,16 +106,45 @@ class Ferramentas:
         ).start()
 
     def trim(self):
-        # Executa o primeiro comando
         threading.Thread(
             target=self.comand_terminal,
             args=("Verificação da ativação do trim SSD", "Fsutil behavior query DisableDeleteNotify"),
             daemon=True
         ).start()
-        
-        # Executa o segundo comando (sem verificação de retorno)
         threading.Thread(
             target=self.comand_terminal,
             args=("Configuração do trim SSD", "Fsutil behavior set DisableDeleteNotify 0"),
             daemon=True
         ).start()
+
+    # =======================
+    # FERRAMENTA DE LIMPEZA DE NAVEGADORES
+    # =======================
+    def limpeza_navegadores(self):
+        def verificar_admin():
+            try:
+                return ctypes.windll.shell32.IsUserAnAdmin()
+            except:
+                return False
+
+        if not verificar_admin():
+            script = sys.argv[0]
+            parametros = " ".join(f'"{arg}"' for arg in sys.argv[1:])
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {parametros}', None, 1)
+            sys.exit()
+
+        bat_file_path = os.path.join(os.path.dirname(__file__), "Limpeza_navegadores.bat")
+        subprocess.run(bat_file_path, shell=True)
+        print("A limpeza dos navegadores foi concluída com sucesso!")
+
+    # =======================
+    # FERRAMENTA DE LIMPEZA DE ARQUIVOS
+    # =======================
+    def limpeza_arquivos(self):
+        """
+        Inicializa a ferramenta de limpeza de arquivos.
+        """
+        self.limpar = LimpezaArquivos()
+        self.limpar.limpar_recent_temp_prefetch()
+        
+        print("Limpeza de arquivos concluída!")
