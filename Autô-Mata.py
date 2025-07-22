@@ -5,6 +5,7 @@ from tkinter import *
 from tkinter import ttk
 from Ferramentas.ferramentas import Ferramentas
 from Ferramentas.limpeza_windows import LimpezaArquivos
+from update.atualizacao import check_for_updates
 import sys
 import threading
 import ctypes
@@ -63,8 +64,10 @@ style.theme_use("clam")
 guias = ttk.Notebook(janela)
 ferramentas_aba = ttk.Frame(guias)
 ferramentas_automatizadas = ttk.Frame(guias)
+configuracao_aba = ttk.Frame(guias)
 guias.add(ferramentas_aba, text="Ferramentas")
 guias.add(ferramentas_automatizadas, text="Ferramentas Automáticas")
+guias.add(configuracao_aba, text="Configuração")
 guias.pack(expand=True, fill='both')
 
 # =======================
@@ -177,6 +180,16 @@ btn_executar = ttk.Button(
     command=executar_selecionados
 )
 btn_executar.pack(pady=10)
+
+# =======================
+# CONFIGURAÇÃO
+# =======================
+btn_config = ttk.Button(
+    configuracao_aba,
+    text="Verificar Atualizações",
+    command=lambda: check_for_updates()  # Placeholder para função de atualização
+)
+btn_config.pack(pady=10)
 
 # =======================
 # INICIA A INTERFACE GRÁFICA
