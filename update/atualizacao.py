@@ -148,17 +148,13 @@ def check_for_updates():
         # Comparação de versões numérica
         if float(remote_version) > float(local_version):
             print(f"Uma nova versão ({remote_version}) está disponível!")
-            confirm = input("Deseja atualizar agora? (s/n): ").lower()
-            if confirm == 's':
-                if download_and_extract_latest_release():
-                    print("Atualização concluída com sucesso! Por favor, reinicie o aplicativo.")
-                    return True
-                else:
-                    print("Falha ao aplicar a atualização.")
-                    return False
+            if download_and_extract_latest_release():
+                print("Atualização concluída com sucesso! Por favor, reinicie o aplicativo.")
+                return True
             else:
-                print("Atualização adiada.")
+                print("Falha ao aplicar a atualização.")
                 return False
+           
         elif float(remote_version) == float(local_version):
             print("Seu aplicativo já está na versão mais recente.")
             return False
