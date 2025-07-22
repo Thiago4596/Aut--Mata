@@ -149,7 +149,7 @@ for func, text in botoes.items():
 # =======================
 # CAIXA DE TEXTO DE SAÍDA
 # =======================
-caixa_texto = Text(ferramentas_aba, height=5, width=70)
+caixa_texto = Text(height=5, width=70)
 caixa_texto.pack(pady=5)
 sys.stdout = Redirecionador(caixa_texto)
 sys.stderr = sys.stdout
