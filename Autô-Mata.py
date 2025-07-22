@@ -10,6 +10,7 @@ import threading
 import ctypes
 import os
 import queue
+import subprocess  # Importado para execução de comandos
 
 # =======================
 # FUNÇÕES DE SISTEMA
@@ -47,7 +48,7 @@ class Redirecionador:
 # =======================
 janela = Tk()
 janela.title("Autô-Mata V: 2.5")
-icone_path = os.path.join(os.path.dirname(__file__), "Ferramentas", "icone.ico")
+icone_path = os.path.join(os.path.dirname(__file__), "image", "icone.ico")
 janela.iconbitmap(icone_path)
 janela.geometry("500x600")
 janela.resizable(False, False)
@@ -90,7 +91,26 @@ def executar_selecionados():
     """Executa as funções marcadas nas ferramentas automáticas."""
     for ferramenta, var in ferramentas_marcadas.items():
         if var.get():
-            threading.Thread(target=getattr(ferramentas, ferramenta), daemon=True).start()
+            try:
+                threading.Thread(target=getattr(ferramentas, ferramenta), daemon=True).start()
+            except Exception as e:
+                print(f"Erro ao executar {ferramenta}: {e}")
+
+def executar_comando(comando):
+    """Executa um comando e retorna a saída."""
+    try:
+        process = subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        return stdout.decode(), stderr.decode()
+    except Exception as e:
+        return "", str(e)
+
+#def dism():
+    #Executa a ferramenta DISM."""
+""" stdout, stderr = executar_comando("DISM /Online /Cleanup-Image /CheckHealth")
+    print(stdout)
+    if stderr:
+        print(f"Erro ao executar DISM: {stderr}") """
 
 # =======================
 # BOTÕES DA ABA FERRAMENTAS
