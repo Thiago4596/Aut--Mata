@@ -1,177 +1,154 @@
 import requests
-import os
-import shutil
 import json
-import zipfile
-import time
+import os
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from packaging.version import parse as parse_version
+from dotenv import load_dotenv # Importa a função para carregar .env
 
-# --- Configurações do Repositório GitHub ---
-GITHUB_REPO_OWNER = 'Thiago4596'
-GITHUB_REPO_NAME = 'Auto-Mata'
-GITHUB_API_BASE_URL = f'https://api.github.com/repos/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}'
-# VERIFIQUE AQUI: Use 'main' se for o branch padrão do seu repositório (mais comum agora)
-# Caso contrário, use 'master'
-GITHUB_RAW_BASE_URL = f'https://raw.githubusercontent.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/Master'
+# ==============================================================================
+# CARREGA VARIÁVEIS DO ARQUIVO .ENV
+# ==============================================================================
+load_dotenv() # Carrega as variáveis de ambiente do arquivo .env
 
-# Caminho para o arquivo de versão local
-LOCAL_VERSION_FILE = 'VERSION.txt'
+# ==============================================================================
+# CONFIGURAÇÃO GERAL (Lida de variáveis de ambiente)
+# ==============================================================================
+# Use os.getenv() para ler as variáveis. O segundo argumento é um valor padrão caso a variável não exista.
+CURRENT_APP_VERSION = os.getenv("CURRENT_APP_VERSION", "0.0")
+GITHUB_OWNER = os.getenv("GITHUB_OWNER", "seu_usuario_padrao")
+GITHUB_REPO = os.getenv("GITHUB_REPO", "seu_repositorio_padrao")
+# O token é o mais crítico para esconder
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") # Não defina um valor padrão para o token, ele deve existir
+TARGET_FILE_IDENTIFIER = os.getenv("TARGET_FILE_IDENTIFIER", ".zip")
+DOWNLOAD_DIR = os.getenv("DOWNLOAD_DIR", "downloads")
 
-# --- Funções de Verificação de Versão ---
-def get_local_version():
-    """Lê a versão atual do aplicativo."""
-    if os.path.exists(LOCAL_VERSION_FILE):
-        with open(LOCAL_VERSION_FILE, 'r') as f:
-            return f.read().strip()
-    return '0.0'
 
-def get_remote_version():
-    """Busca a versão mais recente do GitHub a partir do VERSION.txt no branch principal."""
+# ==============================================================================
+# FUNÇÕES DE INTERAÇÃO COM A API DO GITHUB
+# ==============================================================================
+
+def get_latest_github_release(owner: str, repo: str, token: str = None) -> dict | None:
+    """
+    Busca os detalhes da release mais recente de um repositório GitHub.
+    """
+    url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    if token:
+        headers["Authorization"] = f"token {token}"
+
     try:
-        response = requests.get(f'{GITHUB_RAW_BASE_URL}/VERSION.txt')
-        response.raise_for_status() # Levanta erro para status 4xx/5xx
-        return response.text.strip()
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"Erro ao buscar versão remota: {e}")
+        messagebox.showerror("Erro de Conexão", f"Não foi possível acessar a API do GitHub: {e}")
+        return None
+    except json.JSONDecodeError:
+        messagebox.showerror("Erro de Dados", "A resposta da API do GitHub não é um JSON válido.")
         return None
 
-# --- Função de Download e Extração ---
-def download_and_extract_latest_release(target_dir='.'):
+def download_file(url: str, destination_path: str) -> bool:
     """
-    Baixa o arquivo zip da última release do GitHub e extrai.
-    Prioriza o 'zipball_url' (código-fonte) e depois procura outros .zip nos assets.
+    Baixa um arquivo de uma URL para um caminho de destino especificado.
     """
+    messagebox.showinfo("Download", f"Iniciando download de: {os.path.basename(destination_path)}")
     try:
-        response = requests.get(f'{GITHUB_API_BASE_URL}/releases/latest')
-        response.raise_for_status()
-        release_info = response.json()
-
-        zip_url = release_info.get('zipball_url')
-        if zip_url:
-            zip_filename = f"{GITHUB_REPO_NAME}-{release_info['tag_name']}.zip"
-        else:
-            # Fallback: procura por .zip nos assets (se anexado manualmente)
-            assets = release_info.get('assets', [])
-            for asset in assets:
-                if asset['name'].endswith('.zip'):
-                    zip_url = asset['browser_download_url']
-                    zip_filename = asset['name']
-                    break
-        
-        if not zip_url:
-            print("Nenhum arquivo .zip encontrado na última release.")
-            return False
-
-        download_path = os.path.join(target_dir, zip_filename)
-
-        # Remove o arquivo ZIP antigo se existir, para garantir um download limpo
-        if os.path.exists(download_path):
-            try:
-                os.remove(download_path)
-                time.sleep(0.1) # Pequena pausa para liberar bloqueio
-            except PermissionError as e:
-                print(f"Aviso: Não foi possível remover o ZIP antigo. Erro: {e}")
-            except Exception as e:
-                print(f"Aviso: Erro inesperado ao remover ZIP antigo: {e}")
-
-        # Baixa o arquivo
-        with requests.get(zip_url, stream=True) as r:
+        with requests.get(url, stream=True) as r:
             r.raise_for_status()
-            with open(download_path, 'wb') as f:
+            with open(destination_path, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
-
-        # Descompacta e move os arquivos
-        temp_extract_dir = "temp_update_extract"
-        if os.path.exists(temp_extract_dir):
-            shutil.rmtree(temp_extract_dir)
-        os.makedirs(temp_extract_dir)
-
-        with zipfile.ZipFile(download_path, 'r') as zip_ref:
-            zip_ref.extractall(temp_extract_dir)
-        
-        time.sleep(0.5) # Pausa para o SO liberar o arquivo ZIP
-
-        extracted_contents = os.listdir(temp_extract_dir)
-        if not extracted_contents:
-            print("Erro: O arquivo ZIP está vazio ou não contém arquivos após a extração.")
-            return False
-
-        # Encontra a pasta raiz extraída (se houver apenas uma pasta dentro do zip)
-        source_path = temp_extract_dir
-        if len(extracted_contents) == 1 and os.path.isdir(os.path.join(temp_extract_dir, extracted_contents[0])):
-            source_path = os.path.join(temp_extract_dir, extracted_contents[0])
-
-        # Move os arquivos para o diretório de destino
-        for item_name in os.listdir(source_path):
-            s = os.path.join(source_path, item_name)
-            d = os.path.join(target_dir, item_name)
-            
-            if os.path.isdir(s):
-                if os.path.exists(d):
-                    shutil.rmtree(d)
-                shutil.copytree(s, d)
-            else:
-                if os.path.exists(d):
-                    os.remove(d)
-                shutil.copy2(s, d)
-
-        # Limpa arquivos temporários
-        shutil.rmtree(temp_extract_dir)
-        if os.path.exists(download_path):
-            os.remove(download_path)
-
+        messagebox.showinfo("Download Concluído", f"Download concluído:\n{destination_path}")
         return True
-
-    except (requests.exceptions.RequestException, json.JSONDecodeError, zipfile.BadZipFile, PermissionError) as e:
-        print(f"Erro durante a atualização: {e}")
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Erro de Download", f"Falha ao baixar o arquivo: {e}")
         return False
-    except Exception as e:
-        print(f"Ocorreu um erro inesperado durante a atualização: {e}")
-        import traceback
-        traceback.print_exc()
+    except IOError as e:
+        messagebox.showerror("Erro de Arquivo", f"Não foi possível salvar o arquivo em {destination_path}: {e}")
         return False
 
-# --- Função Principal de Verificação ---
-def check_for_updates():
-    """Verifica se há atualizações e pergunta ao usuário se deseja atualizar."""
-    local_version = get_local_version()
-    remote_version = get_remote_version()
+# ==============================================================================
+# FUNÇÃO PRINCIPAL DE ATUALIZAÇÃO (Com seleção de pasta via GUI)
+# ==============================================================================
 
-    print(f"Versão local: {local_version}")
-    print(f"Versão remota: {remote_version}")
+def verificar_e_baixar_atualizacao_com_gui_selecao():
+    """
+    Verifica a versão mais recente do aplicativo no GitHub e, se houver uma nova versão,
+    pede ao usuário para selecionar a pasta de download e baixa o arquivo.
+    Usa caixas de diálogo Tkinter para interação.
+    """
+    root = tk.Tk()
+    root.withdraw()
 
-    if remote_version is None:
-        print("Não foi possível verificar atualizações no momento.")
-        return False
+    # Validação básica para o token
+    if not GITHUB_TOKEN:
+        messagebox.showerror("Erro de Configuração", "GITHUB_TOKEN não encontrado. Verifique seu arquivo .env.")
+        root.destroy()
+        return
 
-    try:
-        # Comparação de versões numérica
-        if float(remote_version) > float(local_version):
-            print(f"Uma nova versão ({remote_version}) está disponível!")
-            if download_and_extract_latest_release():
-                print("Atualização concluída com sucesso! Por favor, reinicie o aplicativo.")
-                return True
+    messagebox.showinfo("Verificação de Atualizações", "Verificando atualizações no GitHub...")
+
+    current_version_parsed = parse_version(CURRENT_APP_VERSION)
+    latest_release_info = get_latest_github_release(GITHUB_OWNER, GITHUB_REPO, GITHUB_TOKEN)
+
+    if not latest_release_info:
+        return # A mensagem de erro já foi mostrada por get_latest_github_release
+
+    latest_tag = latest_release_info.get('tag_name', 'N/A')
+    if latest_tag == 'N/A':
+        messagebox.showwarning("Aviso", "A release mais recente encontrada não possui uma 'tag_name' válida.")
+        return
+
+    latest_version_parsed = parse_version(latest_tag)
+
+    if latest_version_parsed > current_version_parsed:
+        response = messagebox.askyesno(
+            "Nova Versão Disponível",
+            f"Uma nova versão ({latest_tag}) está disponível! Sua versão é {CURRENT_APP_VERSION}.\n\nDeseja baixar a atualização agora?"
+        )
+        
+        if not response:
+            messagebox.showinfo("Atualização Cancelada", "Atualização cancelada pelo usuário.")
+            return
+
+        assets = latest_release_info.get('assets', [])
+        download_url = None
+        asset_name = None
+
+        if assets:
+            for asset in assets:
+                if TARGET_FILE_IDENTIFIER.lower() in asset.get('name', '').lower():
+                    download_url = asset.get('browser_download_url')
+                    asset_name = asset.get('name')
+                    break
+            
+            if download_url and asset_name:
+                selected_dir = filedialog.askdirectory(
+                    title="Selecione o diretório para baixar a atualização",
+                    initialdir=os.path.expanduser("~")
+                )
+
+                if not selected_dir:
+                    messagebox.showwarning("Download Cancelado", "Nenhum diretório selecionado. Download cancelado.")
+                    return
+                    
+                destination_path = os.path.join(selected_dir, asset_name)
+                
+                if download_file(download_url, destination_path):
+                    messagebox.showinfo("Sucesso", f"A nova versão foi baixada para:\n{destination_path}\n\nPor favor, instale a nova versão.")
+                else:
+                    messagebox.showerror("Falha", "Não foi possível concluir o download da atualização.")
             else:
-                print("Falha ao aplicar a atualização.")
-                return False
-           
-        elif float(remote_version) == float(local_version):
-            print("Seu aplicativo já está na versão mais recente.")
-            return False
-        else: # remote_version < local_version
-             print("Sua versão local é mais recente que a remota disponível. Nenhuma atualização necessária.")
-             return False
-    except ValueError:
-        print("Erro: Formato de versão inválido para comparação numérica. Verifique VERSION.txt.")
-        return False
+                messagebox.showwarning("Arquivo Não Encontrado", f"Nenhum arquivo de atualização '{TARGET_FILE_IDENTIFIER}' encontrado na release {latest_tag}.")
+                if assets:
+                    asset_names = "\n".join([a.get('name', 'Nome desconhecido') for a in assets])
+                    messagebox.showinfo("Assets Disponíveis", f"Assets disponíveis nesta release:\n{asset_names}")
+        else:
+            messagebox.showwarning("Aviso", "Nenhuma asset (arquivo) encontrada para a release mais recente.")
+    elif latest_version_parsed < current_version_parsed:
+        messagebox.showinfo("Versão", f"Sua versão ({CURRENT_APP_VERSION}) é mais recente que a do GitHub ({latest_tag}).")
+    else:
+        messagebox.showinfo("Versão Atualizada", f"Você já está na versão mais recente: {latest_tag}.")
 
-# --- Exemplo de Uso ---
-if __name__ == "__main__":
-    if not os.path.exists(LOCAL_VERSION_FILE):
-        with open(LOCAL_VERSION_FILE, 'w') as f:
-            f.write('1.0') # Versão inicial para testes
-
-    print("Iniciando o aplicativo...")
-    check_for_updates()
-    print("Aplicativo em execução (ou reiniciando após a atualização)...")
-    # Seu código principal do aplicativo viria aqui
+    root.destroy()

@@ -5,7 +5,7 @@ from tkinter import *
 from tkinter import ttk
 from Ferramentas.ferramentas import Ferramentas
 from Ferramentas.limpeza_windows import LimpezaArquivos
-from update.atualizacao import check_for_updates
+from update.atualizacao import verificar_e_baixar_atualizacao_com_gui_selecao as vbags
 import sys
 import threading
 import ctypes
@@ -187,7 +187,7 @@ btn_executar.pack(pady=10)
 btn_config = ttk.Button(
     configuracao_aba,
     text="Verificar Atualizações",
-    command=lambda: check_for_updates()  # Placeholder para função de atualização
+    command=lambda: threading.Thread(target=vbags, daemon=True).start()
 )
 btn_config.pack(pady=10)
 
