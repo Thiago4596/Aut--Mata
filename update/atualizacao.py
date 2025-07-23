@@ -4,24 +4,25 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from packaging.version import parse as parse_version
-from dotenv import load_dotenv # Importa a função para carregar .env
 
 # ==============================================================================
-# CARREGA VARIÁVEIS DO ARQUIVO .ENV
+# CONFIGURAÇÃO GERAL (Variáveis definidas diretamente no script)
 # ==============================================================================
-load_dotenv() # Carrega as variáveis de ambiente do arquivo .env
+# Defina a versão atual do seu aplicativo.
+CURRENT_APP_VERSION = "2.6"
 
-# ==============================================================================
-# CONFIGURAÇÃO GERAL (Lida de variáveis de ambiente)
-# ==============================================================================
-# Use os.getenv() para ler as variáveis. O segundo argumento é um valor padrão caso a variável não exista.
-CURRENT_APP_VERSION = os.getenv("CURRENT_APP_VERSION", "0.0")
-GITHUB_OWNER = os.getenv("GITHUB_OWNER", "seu_usuario_padrao")
-GITHUB_REPO = os.getenv("GITHUB_REPO", "seu_repositorio_padrao")
-# O token é o mais crítico para esconder
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") # Não defina um valor padrão para o token, ele deve existir
-TARGET_FILE_IDENTIFIER = os.getenv("TARGET_FILE_IDENTIFIER", ".zip")
-DOWNLOAD_DIR = os.getenv("DOWNLOAD_DIR", "downloads")
+# Parâmetros do Repositório GitHub
+GITHUB_OWNER = "Thiago4596"
+GITHUB_REPO = "Auto-Mata"
+# O token é definido como None, pois o repositório é público e não exige autenticação.
+GITHUB_TOKEN = None
+
+# Identificador para o arquivo de atualização esperado na release.
+TARGET_FILE_IDENTIFIER = ".exe"
+
+# O diretório padrão de download (pode ser sobrescrito pelo usuário via GUI)
+# Não é estritamente necessário se você sempre pede ao usuário, mas pode ser um fallback.
+DOWNLOAD_DIR = "downloads"
 
 
 # ==============================================================================
@@ -34,7 +35,7 @@ def get_latest_github_release(owner: str, repo: str, token: str = None) -> dict 
     """
     url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
     headers = {"Accept": "application/vnd.github.v3+json"}
-    if token:
+    if token: # O cabeçalho de autorização só é adicionado se um token for fornecido
         headers["Authorization"] = f"token {token}"
 
     try:
@@ -79,15 +80,10 @@ def verificar_e_baixar_atualizacao_com_gui_selecao():
     Usa caixas de diálogo Tkinter para interação.
     """
     root = tk.Tk()
-    root.withdraw()
+    root.withdraw() # Esconde a janela principal do Tkinter
 
-    # Validação básica para o token
-    if not GITHUB_TOKEN:
-        messagebox.showerror("Erro de Configuração", "GITHUB_TOKEN não encontrado. Verifique seu arquivo .env.")
-        root.destroy()
-        return
-
-    messagebox.showinfo("Verificação de Atualizações", "Verificando atualizações no GitHub...")
+    print("Verificando atualizações...")
+    # Parse da versão atual do aplicativo
 
     current_version_parsed = parse_version(CURRENT_APP_VERSION)
     latest_release_info = get_latest_github_release(GITHUB_OWNER, GITHUB_REPO, GITHUB_TOKEN)

@@ -5,7 +5,7 @@ from tkinter import *
 from tkinter import ttk
 from Ferramentas.ferramentas import Ferramentas
 from Ferramentas.limpeza_windows import LimpezaArquivos
-from update.atualizacao import verificar_e_baixar_atualizacao_com_gui_selecao as vbags
+from update.atualizacao import CURRENT_APP_VERSION, verificar_e_baixar_atualizacao_com_gui_selecao as vbags
 import sys
 import threading
 import ctypes
@@ -48,7 +48,7 @@ class Redirecionador:
 # INICIALIZAÇÃO DA JANELA
 # =======================
 janela = Tk()
-janela.title("Autô-Mata V: 2.5")
+janela.title(f"Autô-Mata V: {CURRENT_APP_VERSION}")
 icone_path = os.path.join(os.path.dirname(__file__), "image", "icone.ico")
 janela.iconbitmap(icone_path)
 janela.geometry("500x600")
