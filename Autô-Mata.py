@@ -5,13 +5,12 @@ from tkinter import *
 from tkinter import ttk
 from Ferramentas.ferramentas import Ferramentas
 from Ferramentas.limpeza_windows import LimpezaArquivos
+from services.func_interface import  *
 from update.atualizacao import CURRENT_APP_VERSION, verificar_e_baixar_atualizacao_com_gui_selecao as vbags
 import sys
 import threading
 import ctypes
 import os
-import queue
-import subprocess  # Importado para execução de comandos
 
 # =======================
 # FUNÇÕES DE SISTEMA
@@ -77,45 +76,6 @@ ferramentas = Ferramentas()
 limpeza = LimpezaArquivos()  # Remova se não for usar
 
 # =======================
-# FUNÇÕES DE INTERFACE
-# =======================
-def atualizar_caixa_texto():
-    """Atualiza a caixa de texto com conteúdo da fila."""
-    try:
-        while True:
-            texto = ferramentas.output_queue.get_nowait()
-            caixa_texto.insert(END, texto)
-            caixa_texto.see(END)
-    except queue.Empty:
-        pass
-    janela.after(100, atualizar_caixa_texto)
-
-def executar_selecionados():
-    """Executa as funções marcadas nas ferramentas automáticas."""
-    for ferramenta, var in ferramentas_marcadas.items():
-        if var.get():
-            try:
-                threading.Thread(target=getattr(ferramentas, ferramenta), daemon=True).start()
-            except Exception as e:
-                print(f"Erro ao executar {ferramenta}: {e}")
-
-def executar_comando(comando):
-    """Executa um comando e retorna a saída."""
-    try:
-        process = subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        return stdout.decode(), stderr.decode()
-    except Exception as e:
-        return "", str(e)
-
-#def dism():
-    #Executa a ferramenta DISM."""
-""" stdout, stderr = executar_comando("DISM /Online /Cleanup-Image /CheckHealth")
-    print(stdout)
-    if stderr:
-        print(f"Erro ao executar DISM: {stderr}") """
-
-# =======================
 # BOTÕES DA ABA FERRAMENTAS
 # =======================
 botoes = {
@@ -158,7 +118,7 @@ sys.stdout = Redirecionador(caixa_texto)
 sys.stderr = sys.stdout
 
 # Inicia atualização periódica da caixa de texto
-atualizar_caixa_texto()
+atualizar_caixa_texto(ferramentas, caixa_texto, janela)
 
 # =======================
 # CHECKBOXES NA ABA AUTOMÁTICAS
