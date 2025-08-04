@@ -5,7 +5,8 @@ from tkinter import *
 from tkinter import ttk
 from Ferramentas.ferramentas import Ferramentas
 from Ferramentas.limpeza_windows import LimpezaArquivos
-from services.func_interface import  *
+from services.func_interface import atualizar_caixa_texto as act
+from services.chckbox_automática import checkbox_aba_automática as cba
 from update.atualizacao import CURRENT_APP_VERSION, verificar_e_baixar_atualizacao_com_gui_selecao as vbags
 import sys
 import threading
@@ -118,28 +119,12 @@ sys.stdout = Redirecionador(caixa_texto)
 sys.stderr = sys.stdout
 
 # Inicia atualização periódica da caixa de texto
-atualizar_caixa_texto(ferramentas, caixa_texto, janela)
+act(ferramentas, caixa_texto, janela)
 
 # =======================
 # CHECKBOXES NA ABA AUTOMÁTICAS
 # =======================
-ferramentas_marcadas = {}
-frame_check = Frame(ferramentas_automatizadas)
-frame_check.pack(pady=10)
-
-for func, text in botoes.items():
-    var = BooleanVar()
-    chk = ttk.Checkbutton(frame_check, text=text, variable=var)
-    chk.pack(anchor='w', padx=10, pady=2)
-    ferramentas_marcadas[func] = var
-
-# Botão para executar selecionados
-btn_executar = ttk.Button(
-    ferramentas_automatizadas,
-    text="Executar Selecionados",
-    command=executar_selecionados
-)
-btn_executar.pack(pady=10)
+cba(ferramentas_automatizadas, botoes, ferramentas)
 
 # =======================
 # CONFIGURAÇÃO
