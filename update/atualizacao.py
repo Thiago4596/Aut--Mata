@@ -9,7 +9,7 @@ from packaging.version import parse as parse_version
 # CONFIGURAÇÃO GERAL (Variáveis definidas diretamente no script)
 # ==============================================================================
 # Defina a versão atual do seu aplicativo.
-CURRENT_APP_VERSION = "2.6"
+CURRENT_APP_VERSION = "2.7"
 
 # Parâmetros do Repositório GitHub
 GITHUB_OWNER = "Thiago4596"

@@ -5,7 +5,7 @@ a = Analysis(
     ['Autô-Mata.py'],
     pathex=[],
     binaries=[],
-    datas=[('Ferramentas', 'Fearramentas'), ('image', 'image'), ('update', 'update')],
+    datas=[('Ferramentas', 'Fearramentas'), ('image', 'image'), ('update', 'update'), ('services', 'services')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
