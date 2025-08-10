@@ -1,21 +1,18 @@
 from tkinter import END
-import queue
 import threading
 import subprocess
+import sys
 
 # =======================
 # FUNÇÕES DE INTERFACE
 # =======================
 def atualizar_caixa_texto(ferramentas, caixa_texto, janela):
     """Atualiza a caixa de texto com conteúdo da fila."""
-    try:
-        while True:
-            texto = ferramentas.output_queue.get_nowait()
-            caixa_texto.insert(END, texto)
-            caixa_texto.see(END)
-    except queue.Empty:
-        pass
-    # A CORREÇÃO ESTÁ AQUI: a chamada recursiva precisa passar os argumentos novamente.
+    # A lógica de atualização da caixa de texto agora é tratada pelo Redirecionador
+    # em Autô-Mata.py, que intercepta sys.stdout. Não precisamos mais de uma fila aqui.
+    # Esta função pode ser removida ou adaptada se houver necessidade de alguma
+    # lógica de interface específica que não seja apenas exibir texto.
+    # Por enquanto, ela pode ser um placeholder ou ser removida se não for mais necessária.
     janela.after(100, atualizar_caixa_texto, ferramentas, caixa_texto, janela)
 
 def executar_selecionados(ferramentas, ferramentas_marcadas):
@@ -36,3 +33,5 @@ def executar_comando(comando):
         return stdout.decode(), stderr.decode()
     except Exception as e:
         return "", str(e)
+
+

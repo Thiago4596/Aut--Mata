@@ -62,7 +62,7 @@ guias.pack(expand=True, fill='both')
 # INSTÂNCIAS DAS CLASSES
 # =======================
 ferramentas = Ferramentas()
-limpeza = LimpezaArquivos()  # Remova se não for usar
+limpeza = LimpezaArquivos()
 
 # =======================
 # BOTÕES DA ABA FERRAMENTAS

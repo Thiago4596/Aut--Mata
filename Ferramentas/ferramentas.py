@@ -2,137 +2,63 @@ import os
 import subprocess
 import ctypes
 import sys
-import queue
 import threading
-from Ferramentas.limpeza_windows import LimpezaArquivos
+from models.command import Command
 
 class Ferramentas:
     def __init__(self):
-        # Inicializa a fila quando uma INSTÂNCIA é criada
-        self.output_queue = queue.Queue()
         self.resultado = None
-
-    # =======================
-    # MÉTODO GENÉRICO DE COMANDO
-    # =======================
-    def comand_terminal(self, text, comand):
-        try:
-            self.output_queue.put(f"{text}\n")
-            self.resultado = subprocess.Popen(
-                comand,
-                shell=True,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            for line in self.resultado.stdout:
-                self.output_queue.put(line)
-            self.resultado.wait()
-            self.output_queue.put("\n" + "-"*50 + "\n")
-        except subprocess.CalledProcessError as e:
-            error_msg = f"\nErro durante a execução (Código {e.returncode}):\n"
-            error_msg += e.stderr if e.stderr else "Sem detalhes de erro.\n"
-            self.output_queue.put(error_msg)
-            self.output_queue.put("\n" + "-"*50 + "\n")
-        except Exception as e:
-            error_msg = f"\nErro inesperado: {str(e)}\n"
-            self.output_queue.put(error_msg)
-            self.output_queue.put("\n" + "-"*50 + "\n")
 
     # =======================
     # FERRAMENTAS DE SISTEMA
     # =======================
     def check_disk(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("O disco será checado!\n Reinicie o computador!", "echo s | chkdsk /f /r"),
-            daemon=True
-        ).start()
+        check_disk = Command()
+        check_disk.command_execute("O disco será checado!\n Reinicie o computador!", "echo s | chkdsk /f /r")
 
     def dism(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("O Dism foi executado!", "dism /online /cleanup-image /restorehealth"),
-            daemon=True
-        ).start()
+        dism = Command()
+        dism.command_execute("O Dism foi executado!", "dism /online /cleanup-image /restorehealth")
 
     def scannow(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("O Scannow foi executado!", "sfc /scannow"),
-            daemon=True
-        ).start()
+        scannow = Command()
+        scannow.command_execute("O Scannow foi executado!", "sfc /scannow")
 
     def windows_active(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("A verificação da ativação do windows foi executada", "slmgr /xpr"),
-            daemon=True
-        ).start()
+        windows_active = Command()
+        windows_active.command_execute("A verificação da ativação do windows foi executada", "slmgr /xpr")
 
     def limpeza_dns(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("O dns foi limpo!", "ipconfig /flushdns"),
-            daemon=True
-        ).start()
+        limpeza_dns = Command()
+        limpeza_dns.command_execute("O dns foi limpo!", "ipconfig /flushdns")
 
     def verificacao_de_memoria(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("A verificação de memória foi executada", "mdsched.exe"),
-            daemon=True
-        ).start()
+        verificacao_de_memoria = Command()
+        verificacao_de_memoria.command_execute("A verificação de memória foi executada", "mdsched.exe")
 
     def limpeza_de_disco(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("O disco será limpo!", "cleanmgr /d C:"),
-            daemon=True
-        ).start()
+        limpeza_de_disco = Command()
+        limpeza_de_disco.command_execute("O disco será limpo!", "cleanmgr /d C:")
 
     def services(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("O programa services.msc foi aberto!", "services.msc"),
-            daemon=True
-        ).start()
+        services = Command()
+        services.command_execute("O programa services.msc foi aberto!", "services.msc")
 
     def msconfig(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("O programa msconfig foi aberto!", "msconfig"),
-            daemon=True
-        ).start()
+        msconfig = Command()
+        msconfig.command_execute("O programa msconfig foi aberto!", "msconfig")
+
 
     def trim(self):
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("Verificação da ativação do trim SSD", "Fsutil behavior query DisableDeleteNotify"),
-            daemon=True
-        ).start()
-        threading.Thread(
-            target=self.comand_terminal,
-            args=("Configuração do trim SSD", "Fsutil behavior set DisableDeleteNotify 0"),
-            daemon=True
-        ).start()
+        trim = Command()
+        trim.command_execute("Verificação da ativação do trim SSD", "Fsutil behavior query DisableDeleteNotify")
+        trim.command_execute("Configuração do trim SSD", "Fsutil behavior set DisableDeleteNotify 0")
+    
 
     # =======================
     # FERRAMENTA DE LIMPEZA DE NAVEGADORES
     # =======================
     def limpeza_navegadores(self):
-        def verificar_admin():
-            try:
-                return ctypes.windll.shell32.IsUserAnAdmin()
-            except:
-                return False
-
-        if not verificar_admin():
-            script = sys.argv[0]
-            parametros = " ".join(f'"{arg}"' for arg in sys.argv[1:])
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {parametros}', None, 1)
-            sys.exit()
-
         bat_file_path = os.path.join(os.path.dirname(__file__), "Limpeza_navegadores.bat")
         subprocess.run(bat_file_path, shell=True)
         print("A limpeza dos navegadores foi concluída com sucesso!")
@@ -144,7 +70,12 @@ class Ferramentas:
         """
         Inicializa a ferramenta de limpeza de arquivos.
         """
+        # A importação de LimpezaArquivos foi movida para dentro da função
+        # para evitar dependência circular e garantir que a instância seja criada
+        # apenas quando a função for chamada.
+        from Ferramentas.limpeza_windows import LimpezaArquivos
         self.limpar = LimpezaArquivos()
         self.limpar.limpar_recent_temp_prefetch()
         
         print("Limpeza de arquivos concluída!")
+
