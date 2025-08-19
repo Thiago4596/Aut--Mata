@@ -53,6 +53,10 @@ class Ferramentas:
         trim = Command()
         trim.command_execute("Verificação da ativação do trim SSD", "Fsutil behavior query DisableDeleteNotify")
         trim.command_execute("Configuração do trim SSD", "Fsutil behavior set DisableDeleteNotify 0")
+
+    def mrt(self):
+        mrt = Command()
+        mrt.command_execute("A ferramenta de remoção de software mal-intencionado foi executada", "mrt.exe")
     
 
     # =======================
