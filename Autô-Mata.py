@@ -11,12 +11,12 @@ import os
 # Importações de módulos do seu projeto
 # Certifique-se de que esses arquivos estão no caminho correto
 try:
-    from Ferramentas.ferramentas import Ferramentas
-    from Ferramentas.limpeza_windows import LimpezaArquivos
-    from services.func_interface import atualizar_caixa_texto as act
-    from services.chckbox_automática import checkbox_aba_automática as cba
+    from auto_mata.ferramentas.ferramentas import Ferramentas
+    from auto_mata.ferramentas.limpeza_windows import LimpezaArquivos
+    from auto_mata.services.func_interface import atualizar_caixa_texto as act
+    from auto_mata.services.chckbox_automática import checkbox_aba_automática as cba
     from update.atualizacao import CURRENT_APP_VERSION, verificar_e_baixar_atualizacao_com_gui_selecao as vbags
-    from services.admin import verificar_admin as veri_a
+    from auto_mata.services.admin import verificar_admin as veri_a
 except ImportError as e:
     print(f"Erro ao importar um módulo: {e}. Verifique se todos os arquivos estão na estrutura de pastas correta.")
     sys.exit()
